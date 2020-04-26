@@ -1,0 +1,5 @@
+imutils
+google-cloud-pubsub
+opencv-python
+apache-beam[gcp]
+google-cloud-storage
