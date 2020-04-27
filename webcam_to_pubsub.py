@@ -13,7 +13,7 @@ time.sleep(2.0)
 fps = FPS().start()
 
 # Setup PubSub
-client = pubsub_v1.PublisherClient()
+client = pubsub_v1.PublisherClient.from_service_account_file('/home/pi/servic_account.json')
 
 PROJECT_ID = 'dhodun1'
 TOPIC_NAME = 'test_traffic_topic'
