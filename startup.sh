@@ -3,7 +3,7 @@ cd "$(dirname "$0")"
 
 git pull
 
-setup.sh
+bash setup.sh
 pip3 install -r raspberry_pi_requirements.txt
 
 export GOOGLE_APPLICATION_CREDENTIALS='/home/pi/service_account.json'
