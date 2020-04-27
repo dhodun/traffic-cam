@@ -7,6 +7,5 @@ PACKAGE_NAME.egg-info
 
 read_frames_fast.py
 test_cam.py
-traffic-cam.service
 vid_test_fast.py
 vid_test_slow.py
