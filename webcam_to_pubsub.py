@@ -6,6 +6,8 @@ from imutils.video.fps import FPS
 from imutils.video.webcamvideostream import WebcamVideoStream
 import os
 
+#TODO: Add headless mode
+
 # VideoStream
 stream = WebcamVideoStream(src=0).start()
 time.sleep(2.0)
