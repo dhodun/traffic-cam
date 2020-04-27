@@ -1,0 +1,10 @@
+[Unit]
+Description=Traffic Cam Service
+After=multi-user.target
+
+[Service]
+Type=idle
+ExecStart=/bin/bash /home/pi/traffic-cam/startup.sh
+
+[Install]
+WantedBy=multi-user.target
