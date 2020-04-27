@@ -4,7 +4,7 @@ After=multi-user.target
 
 [Service]
 Type=idle
-ExecStart=/usr/bin/python3 /home/pi/traffic_cam/startup.sh
+ExecStart=/bin/bash /home/pi/traffic-cam/startup.sh
 
 [Install]
 WantedBy=multi-user.target
