@@ -1,3 +1,3 @@
 imutils
 google-cloud-pubsub
-opencv-python
+opencv-contrib-python==4.1.0.25
