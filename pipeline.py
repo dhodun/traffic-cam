@@ -26,12 +26,16 @@ class WriteFile(beam.DoFn):
 
     def process(self, element):
         from google.cloud import storage
+        import datetime
+
+        now = datetime.datetime.now()
+
         storage_client = storage.Client()
 
         length = len(element)
 
         bucket = storage_client.bucket('dhodun1')
-        blob = bucket.blob('temp/df/out-{}.jpg'.format(length))
+        blob = bucket.blob('temp/df/out-{}.jpg'.format(now.strftime("%Y-%m-%d_%H-%M-%S-%U")))
         logging.info('Blob name: {}'.format(blob.name))
         blob.upload_from_string(element)
 
@@ -42,14 +46,15 @@ class WriteFile(beam.DoFn):
 
 def run(argv=None, save_main_session=False):
     """Build and run the pipeline"""
-    pipeline_options = PipelineOptions(flags=['--streaming'])
+    pipeline_options = PipelineOptions(flags=['--streaming','--update'])
     pipeline_options.view_as(GoogleCloudOptions).project = 'dhodun1'
     pipeline_options.view_as(GoogleCloudOptions).temp_location = 'gs://dhodun1/temp/job'
     pipeline_options.view_as(GoogleCloudOptions).staging_location = 'gs://dhodun1/temp/df/staging'
     pipeline_options.view_as(GoogleCloudOptions).region = 'us-central1'
+    pipeline_options.view_as(GoogleCloudOptions).job_name = 'beamapp-dhodun-0426182249-193910'
     # pipeline_options.view_as(SetupOptions).streaming = True
-    # pipeline_options.view_as(SetupOptions).requirements_file = 'requirements.txt'
-    pipeline_options.view_as(SetupOptions).setup_file = '/Users/dhodun/developer/traffic-cam/setup.py'
+    pipeline_options.view_as(SetupOptions).requirements_file = 'requirements.txt'
+    # pipeline_options.view_as(SetupOptions).setup_file = '/Users/dhodun/developer/traffic-cam/setup.py'
     with beam.Pipeline(options=pipeline_options, runner='dataflow') as p:
 
         topic = 'projects/dhodun1/topics/test_traffic_topic'

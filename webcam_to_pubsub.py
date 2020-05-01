@@ -6,7 +6,9 @@ from imutils.video.fps import FPS
 from imutils.video.webcamvideostream import WebcamVideoStream
 import os
 
-#TODO: Add headless mode
+# TODO: Add headless mode
+# TODO: reset FPS beginning once in a while
+# TODO: Add some caching for long internet outages
 
 # VideoStream
 stream = WebcamVideoStream(src=0).start()

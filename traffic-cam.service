@@ -6,7 +6,7 @@ After=multi-user.target
 Environment=DISPLAY=:0
 Environment=XAUTHORITY=/home/pi/.Xauthority
 Type=idle
-ExecStart=/bin/bash /home/pi/traffic-cam/startup.sh > /home/pi/sample.log 2>&1
+ExecStart=/bin/bash /home/pi/traffic-cam/startup.sh install_requirements > /home/pi/sample.log 2>&1
 Restart=always
 RestartSec=10s
 KillMode=process
