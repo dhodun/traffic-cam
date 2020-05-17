@@ -1,4 +1,5 @@
 #!/bin/bash
+# TODO: why does systemctl restart not work?
 cd "$(dirname "$0")"
 
 git_pull () {
@@ -13,7 +14,7 @@ install_requirements () {
 main () {
     git_pull
 
-    if [ $1 = "install_requirements"]
+    if [ $1 -eq "install_requirements"]
     then
         install_requirements
     fi
