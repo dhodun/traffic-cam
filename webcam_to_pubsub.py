@@ -54,7 +54,8 @@ while True:
     cv2.putText(frame, "FPS: {}".format(fps.fps()),
                 (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0))
 
-    cv2.imshow("Video", frame)
+    # TODO: Convert to headless
+    # cv2.imshow("Video", frame)
     _, buffer = cv2.imencode('.jpg', frame)
     # TODO: change timezone handling?
     future = client.publish(topic_name, buffer.tostring(), event_timestamp1=datetime.now(tz=timezone.utc))
