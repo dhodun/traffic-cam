@@ -5,6 +5,7 @@ from google.cloud import pubsub_v1
 from imutils.video.fps import FPS
 from imutils.video.webcamvideostream import WebcamVideoStream
 import os
+from datetime import datetime, timezone
 
 # TODO: Add headless mode
 # TODO: reset FPS beginning once in a while
@@ -55,7 +56,8 @@ while True:
 
     cv2.imshow("Video", frame)
     _, buffer = cv2.imencode('.jpg', frame)
-    future = client.publish(topic_name, buffer.tostring())
+    # TODO: change timezone handling?
+    future = client.publish(topic_name, buffer.tostring(), event_timestamp=datetime.now(tz=timezone.utc))
     message_id = future.result()
 
     # Check to see if 'q' is pressed to quit
