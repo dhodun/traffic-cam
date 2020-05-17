@@ -58,7 +58,9 @@ while True:
     # cv2.imshow("Video", frame)
     _, buffer = cv2.imencode('.jpg', frame)
     # TODO: change timezone handling?
-    future = client.publish(topic_name, buffer.tostring(), event_timestamp1=datetime.now(tz=timezone.utc))
+    event_timestamp=datetime.now(tz=timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+    future = client.publish(topic_name, buffer.tostring(),
+            event_timestamp=event_timestamp)
     message_id = future.result()
 
     # Check to see if 'q' is pressed to quit
