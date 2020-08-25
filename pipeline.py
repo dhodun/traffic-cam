@@ -37,8 +37,7 @@ class WriteFile(beam.DoFn):
         from google.cloud import storage
         import datetime
         import random
-        import os
-        import binascii
+        import string
 
         now = datetime.datetime.now()
 
@@ -46,13 +45,18 @@ class WriteFile(beam.DoFn):
 
         length = len(element)
 
+        random_string = ''.join([random.choice(string.ascii_letters + string.digits) for n in range(8)])
+
         bucket = storage_client.bucket('dhodun1')
         # TODO: Change this, since it names every image in a bundle the same and overwrites?
         blob = bucket.blob(
-            'temp/df/out-{}-bytes-{}-rand-{}.jpg'.format(now.strftime("%Y-%m-%d_%H-%M-%S-%U"), length, binascii.hexlify(os.urandom(8))))
+            'temp/df/out-{}-bytes-{}-rand-{}.jpg'.format(now.strftime("%Y-%m-%d_%H-%M-%S-%U"), length, random_string))
+        # TODO: un-hard-code bucket
+        file_path = f'gs://dhodun1/{blob.name}'
         if random.random() < 0.01:
-            logging.info('Blob name: {}'.format(blob.name))
+            logging.info(f'File path:{file_path}')
         blob.upload_from_string(element)
+        yield {'frame_path': file_path}
 
 
 def run_camera_pipeline(argv=None, save_main_session=False, in_test_mode=True, update_job_name=None):
@@ -74,7 +78,8 @@ def run_camera_pipeline(argv=None, save_main_session=False, in_test_mode=True, u
         
         try:
             # TODO: Does this interfere with updating a streaming job that exists?
-            subprocess.check_call('gsutil -m rm -r {}'.format(OUTPUT_DIR).split())
+            # subprocess.check_call('gsutil -m rm -r {}'.format(OUTPUT_DIR).split())
+            pass
         except:
             pass
 
@@ -90,7 +95,7 @@ def run_camera_pipeline(argv=None, save_main_session=False, in_test_mode=True, u
         'job_name': job_name,
         # 'num_workers': 1,
         'autoscaling_algorithm': 'THROUGHPUT_BASED',
-        'max_num_workers': 400,
+        'max_num_workers': 50,
         
     }
 
@@ -115,6 +120,8 @@ def run_camera_pipeline(argv=None, save_main_session=False, in_test_mode=True, u
                     # | 'readFromPubSub' >> beam.io.ReadFromPubSub(topic=topic)
                     | 'CountBytes' >> beam.ParDo(LogBytes())
                     | 'WriteToGCS' >> beam.ParDo(WriteFile())
+                    | 'RecordInBQ' >> beam.io.WriteToBigQuery('dhodun1:traffic_cam.frames',
+                    schema='frame_path:STRING', write_disposition='WRITE_APPEND')
                     )
 
         # output = ( messages
@@ -131,5 +138,5 @@ if __name__ == '__main__':
     BUCKET = 'dhodun1'
 
     # run_camera_pipeline(in_test_mode=True)
-    run_camera_pipeline(in_test_mode=False)
-    # , update_job_name='beamapp-dhodun-0426182249-193910'
+    run_camera_pipeline(in_test_mode=False
+    , update_job_name='autoscale-random-traffic-cam-200521-145441')

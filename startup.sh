@@ -22,6 +22,7 @@ main () {
 
 
     # TODO: Fix this to pick up ADC
+    # TODO: Fix local logs
     export GOOGLE_APPLICATION_CREDENTIALS='/home/pi/service_account.json'
     python3 webcam_to_pubsub.py > /home/pi/sample_startup.log 2>&1
 }
