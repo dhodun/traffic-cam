@@ -8,7 +8,7 @@ git pull
 
 install_requirements () {
     bash setup.sh
-    pip3 install -r raspberry_pi_requirements.txt
+    pip3 install -r requirements.txt
 }
 
 main () {

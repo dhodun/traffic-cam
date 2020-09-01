@@ -13,7 +13,7 @@ Equipment Used:
 
 ABOX Raspberry Pi 3 B+ Complete Starter Kit with Model B Plus Motherboard 32GB Micro SD Card NOOBS, 5V 3A On/Off Power Supply, Premium Black Case, HDMI Cable, SD Card Reader with USB A&USB C, Heatsink.
 
-I had a previous Object Detection with Edge TPU project setup on this pi, but will wipe it for this new project. I Used NOOB to wipe and reinstall Raspbian with full desktop.
+I had a previous Object Detection with Edge TPU project setup on this pi, but will wipe it for this new project. I Used NOOBS to wipe and reinstall Raspbian with full desktop.
 
 Make sure the OS is up to date:
 
@@ -22,10 +22,8 @@ sudo apt update
 sudo apt full-upgrade
 ```
 
-TODO: test without the pre-req
-
-Created key and downloaded
-installed with install.sh
+Created key and copy to pi.
+Clone repo and install with install.sh
 
 
 
