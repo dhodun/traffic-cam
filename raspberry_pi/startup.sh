@@ -22,7 +22,7 @@ main () {
     fi
 
 
-
+    
     # TODO: Fix this to pick up ADC
     # TODO: Fix local logs
     export GOOGLE_APPLICATION_CREDENTIALS='/home/pi/service_account.json'
