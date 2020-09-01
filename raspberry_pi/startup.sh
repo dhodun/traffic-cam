@@ -5,7 +5,7 @@ parent_path=$(cd `dirname $0` && pwd)
 pushd $parent_path
 
 git_pull () {
-git pull
+    git pull
 }   
 
 install_requirements () {
