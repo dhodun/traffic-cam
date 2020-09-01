@@ -1,5 +1,7 @@
 #!/bin/bash
+parent_path=$( cd "$(dirname "${BASH_SOURCE[0]}")" ; pwd -P )
 
+pushd $parent_path
 # Install packages
 sudo bash setup.sh
 
@@ -10,4 +12,5 @@ sudo chmod 644 /lib/systemd/system/traffic-cam.service
 sudo systemctl daemon-reload
 sudo systemctl enable traffic-cam.service
 
+popd
 # sudo reboot
