@@ -1,6 +1,8 @@
 #!/bin/bash
 # TODO: why does systemctl restart not work?
-cd "$(dirname "$0")"
+parent_path=$(cd `dirname $0` && pwd)
+
+pushd $parent_path
 
 git_pull () {
 git pull
@@ -28,3 +30,5 @@ main () {
 }
 
 main
+
+popd
