@@ -15,8 +15,8 @@ install_requirements () {
 
 main () {
     git_pull
-
-    if [[ $1 == "install_requirements" ]]
+    echo $1
+    if [[ $1 -eq "install_requirements" ]]
     then
         install_requirements
     fi
