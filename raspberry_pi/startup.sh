@@ -16,13 +16,13 @@ install_requirements () {
 main () {
     git_pull
 
-    if [ $1 -eq "install_requirements"]
+    if [ $1 -eq "install_requirements" ]
     then
         install_requirements
     fi
 
 
-    
+
     # TODO: Fix this to pick up ADC
     # TODO: Fix local logs
     export GOOGLE_APPLICATION_CREDENTIALS='/home/pi/service_account.json'
