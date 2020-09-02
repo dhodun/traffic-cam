@@ -6,6 +6,7 @@ import setuptools
 setuptools.setup(
     name='traffic-cam',
     version='0.1.0',
+    # TODO(b/162935066): determing more relaxed requirements vs. google-cloud-core==1.3.0 fix in the meantime
     install_requires=[
         'google-api-core==1.16.0',
         'google-apitools==0.5.31',

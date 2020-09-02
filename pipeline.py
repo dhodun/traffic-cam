@@ -27,18 +27,24 @@ class AddMetadata(beam.DoFn):
 
 
 class AnnotateFrames(beam.DoFn):
-    def process(self, element):
+
+    def setup(self):
+        # Imports the Google Cloud client library
+        # Initiate client in setup for re-use across bundles
+        # Works on DirectRunner as of 2.22.0
+
         from google.cloud import vision
         from google.cloud.vision import types
+        
+        logging.info('AnnotateFrames setup called')
 
-        # Instantiate client
-        client = vision.ImageAnnotatorClient()
+        # Instantiates a client
+        self.image_client = vision.ImageAnnotatorClient()
 
-        # image = types.Image(content=element['bytes'])
-        # print(element['bytes'])
 
+    def process(self, element):
         # Perform label detection
-        response = client.label_detection({'content': element['bytes']})
+        response = self.image_client.label_detection({'content': element['bytes']})
         
 
         labels = response.label_annotations
@@ -49,8 +55,6 @@ class AnnotateFrames(beam.DoFn):
             if label.description in LABELS_TO_DETECT:
                 if label.score > THRESHOLD:
                     is_car = True
-
-
         
         # Add to element dict
         element['labels'] = repr(labels)
@@ -71,25 +75,22 @@ class FilterForBQ(beam.DoFn):
 
 class WriteFile(beam.DoFn):
 
-    # def setup(self):
-    #     # Imports the Google Cloud client library
-    #     Issues with DirectRunner
-    #     from google.cloud import storage
+    def setup(self):
+        # Imports the Google Cloud client library
+        # Initiate client in setup for re-use across bundles
+        # Doesn't work with DirectRunner yet      
+        from google.cloud import storage
 
-    #     logging.info('WriteFile setup called')
+        logging.info('WriteFile setup called')
 
-    #     # Instantiates a client
-    #     self.storage_client = storage.Client()
+        # Instantiates a client
+        self.storage_client = storage.Client()
 
     def process(self, element, event_timestamp=beam.DoFn.TimestampParam):
         import random
-
-        from google.cloud import storage
-
-        storage_client = storage.Client()
-
+        
         # TODO: un-hard-code bucket
-        bucket = storage_client.bucket('dhodun1')
+        bucket = self.storage_client.bucket('dhodun1')
         blob = bucket.blob(
             element['blob_name'])
 
@@ -198,5 +199,5 @@ if __name__ == '__main__':
     BUCKET = 'dhodun1'
 
     run_camera_pipeline(in_test_mode=False
-    # , update_job_name='autoscale-random-traffic-cam-200901-210831'
+    , update_job_name='autoscale-random-traffic-cam-200901-235357'
     )
