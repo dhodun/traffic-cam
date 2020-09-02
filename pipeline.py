@@ -1,13 +1,101 @@
-import argparse
 import datetime
 import logging
 
 import apache_beam as beam
-from apache_beam.options.pipeline_options import GoogleCloudOptions
-from apache_beam.options.pipeline_options import PipelineOptions
-from apache_beam.options.pipeline_options import SetupOptions
 
-from google.cloud import storage
+LABELS_TO_DETECT = ['Car', 'Truck']
+THRESHOLD = 0.90
+
+class AddMetadata(beam.DoFn):
+    def process(self, element, event_timestamp=beam.DoFn.TimestampParam):
+        import random
+        import string
+
+        timestamp_string = event_timestamp.to_utc_datetime().strftime("%Y-%m-%d_%H-%M-%S-%U")
+
+        length = len(element)
+
+        # Added random string since every frame in bundle was getting same frame name during testing phase
+        random_string = ''.join(
+            [random.choice(string.ascii_letters + string.digits) for n in range(8)])
+        blob_name = 'temp/df/out-{}-bytes-{}-rand-{}.jpg'.format(
+            timestamp_string, length, random_string)
+        frame_path = f'gs://dhodun1/{blob_name}'
+
+        yield {'bytes': element, 'blob_name': blob_name,
+               'frame_path': frame_path, 'event_timestamp': event_timestamp.to_rfc3339()}
+
+
+class AnnotateFrames(beam.DoFn):
+    def process(self, element):
+        from google.cloud import vision
+        from google.cloud.vision import types
+
+        # Instantiate client
+        client = vision.ImageAnnotatorClient()
+
+        # image = types.Image(content=element['bytes'])
+        # print(element['bytes'])
+
+        # Perform label detection
+        response = client.label_detection({'content': element['bytes']})
+        
+
+        labels = response.label_annotations
+
+        is_car = False
+        for label in labels:
+            print(label)
+            if label.description in LABELS_TO_DETECT:
+                if label.score > THRESHOLD:
+                    is_car = True
+
+
+        
+        # Add to element dict
+        element['labels'] = repr(labels)
+        element['is_car'] = is_car
+
+        yield element
+
+class FilterForBQ(beam.DoFn):
+    def process(self, element):
+        bq_data = {}
+        bq_data['frame_path'] = element['frame_path']
+        bq_data['event_timestamp'] = element['event_timestamp']
+        bq_data['is_car'] = element['is_car']
+        bq_data['labels'] = element['labels']
+
+        yield bq_data
+
+
+class WriteFile(beam.DoFn):
+
+    # def setup(self):
+    #     # Imports the Google Cloud client library
+    #     Issues with DirectRunner
+    #     from google.cloud import storage
+
+    #     logging.info('WriteFile setup called')
+
+    #     # Instantiates a client
+    #     self.storage_client = storage.Client()
+
+    def process(self, element, event_timestamp=beam.DoFn.TimestampParam):
+        import random
+
+        from google.cloud import storage
+
+        storage_client = storage.Client()
+
+        # TODO: un-hard-code bucket
+        bucket = storage_client.bucket('dhodun1')
+        blob = bucket.blob(
+            element['blob_name'])
+
+        if random.random() < 0.01:
+            logging.info(f"File path:{element['frame_path']}")
+        blob.upload_from_string(element['bytes'])
 
 
 class LogBytes(beam.DoFn):
@@ -16,47 +104,10 @@ class LogBytes(beam.DoFn):
 
         # Log 1% of the time
         if random.random() < .01:
-            length = len(element)
+            length = len(element['bytes'])
             logging.info('[Sampled] bytes in this element: {}'.format(length))
 
         yield element
-
-
-class WriteFile(beam.DoFn):
-    
-    # def setup(self):
-    #     # Imports the Google Cloud client library
-    #     from google.cloud import storage
-
-    #     logging.info('WriteFile setup called')
-
-    #     # Instantiates a client
-    #     self.storage_client = storage.Client()
-
-    def process(self, element):
-        from google.cloud import storage
-        import datetime
-        import random
-        import string
-
-        now = datetime.datetime.now()
-
-        storage_client = storage.Client()
-
-        length = len(element)
-
-        random_string = ''.join([random.choice(string.ascii_letters + string.digits) for n in range(8)])
-
-        bucket = storage_client.bucket('dhodun1')
-        # TODO: Change this, since it names every image in a bundle the same and overwrites?
-        blob = bucket.blob(
-            'temp/df/out-{}-bytes-{}-rand-{}.jpg'.format(now.strftime("%Y-%m-%d_%H-%M-%S-%U"), length, random_string))
-        # TODO: un-hard-code bucket
-        file_path = f'gs://dhodun1/{blob.name}'
-        if random.random() < 0.01:
-            logging.info(f'File path:{file_path}')
-        blob.upload_from_string(element)
-        yield {'frame_path': file_path}
 
 
 def run_camera_pipeline(argv=None, save_main_session=False, in_test_mode=True, update_job_name=None):
@@ -77,25 +128,25 @@ def run_camera_pipeline(argv=None, save_main_session=False, in_test_mode=True, u
         OUTPUT_DIR = 'gs://{}/camera_pipeline'.format(BUCKET)
         
         try:
-            # TODO: Does this interfere with updating a streaming job that exists?
+            # TODO: This interferes with existing job, it can't shut down properly because the staging files disappear
             # subprocess.check_call('gsutil -m rm -r {}'.format(OUTPUT_DIR).split())
             pass
         except:
             pass
 
-    # TODO: staging is causing conflicts with existing job sometimes?
     options = {
-        'save_main_session': False,
+        'save_main_session': True,
         'project': PROJECT,
         'region': REGION,
-        'requirements_file': 'requirements.txt',
+        # 'requirements_file': 'requirements.txt',
+        'setup_file': './setup.py',
         'streaming': True,
         'temp_location': os.path.join(OUTPUT_DIR, 'tmp', job_name),
         'staging_location': os.path.join(OUTPUT_DIR, 'tmp', job_name, 'staging'),
         'job_name': job_name,
         # 'num_workers': 1,
         'autoscaling_algorithm': 'THROUGHPUT_BASED',
-        'max_num_workers': 50,
+        'max_num_workers': 5,
         
     }
 
@@ -111,23 +162,32 @@ def run_camera_pipeline(argv=None, save_main_session=False, in_test_mode=True, u
         RUNNER = 'DataflowRunner'
     with beam.Pipeline(RUNNER, options=opts) as p:
 
-        topic = 'projects/dhodun1/topics/test_traffic_topic'
+        # topic = 'projects/dhodun1/topics/test_traffic_topic'
         subscription = 'projects/dhodun1/subscriptions/streaming_dataflow_sub'
 
-        messages = (p
-                    # TODO: consider switching to subscription?
-                    | 'readFromPubSub' >> beam.io.ReadFromPubSub(subscription=subscription)
-                    # | 'readFromPubSub' >> beam.io.ReadFromPubSub(topic=topic)
-                    | 'CountBytes' >> beam.ParDo(LogBytes())
-                    | 'WriteToGCS' >> beam.ParDo(WriteFile())
-                    | 'RecordInBQ' >> beam.io.WriteToBigQuery('dhodun1:traffic_cam.frames',
-                    schema='frame_path:STRING', write_disposition='WRITE_APPEND')
+        #TODO: Add branching pipeline for GCS
+
+        # Initial frame ingestiong
+        frames = (p
+                    | 'ReadFromPubSub' >> beam.io.ReadFromPubSub(subscription=subscription, timestamp_attribute='event_timestamp')
+                    | 'AddMetadata' >> beam.ParDo(AddMetadata())
                     )
 
-        # output = ( messages
-        #     | 'writeToGCS' >> beam.ParDo(WriteFile())
+        # Write historical images to GCS coldline for later processing
+        _ = (
+                    frames
+                    | 'CountBytes' >> beam.ParDo(LogBytes())
+                    | 'WriteToGCS' >> beam.ParDo(WriteFile())
+                    )
 
-        # )
+        # Annotate image via Vision API and copy metadata to BigQuery
+        _ = (
+                    frames
+                    | 'AnnotateFrames' >> beam.ParDo(AnnotateFrames())
+                    | 'FilterBQData' >> beam.ParDo(FilterForBQ())
+                    | 'RecordInBQ' >> beam.io.WriteToBigQuery('dhodun1:traffic_cam.frames',
+                    schema='frame_path:STRING,event_timestamp:TIMESTAMP', write_disposition='WRITE_APPEND')
+                    )
 
 
 if __name__ == '__main__':
@@ -137,6 +197,6 @@ if __name__ == '__main__':
     REGION = 'us-central1'
     BUCKET = 'dhodun1'
 
-    # run_camera_pipeline(in_test_mode=True)
     run_camera_pipeline(in_test_mode=False
-    , update_job_name='autoscale-random-traffic-cam-200521-145441')
+    # , update_job_name='autoscale-random-traffic-cam-200901-210831'
+    )

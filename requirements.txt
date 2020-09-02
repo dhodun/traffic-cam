@@ -1,5 +1,9 @@
 #imutils
 #google-cloud-pubsub
 #opencv-python
-#apache-beam[gcp]
-google-cloud-storage
+#apache-beam[gcp]==2.22.0
+google-api-core==1.16.0
+google-apitools==0.5.31
+google-cloud-core==1.3.0
+google-cloud-storage==1.28.0
+google-cloud-vision==0.42.0

@@ -2,8 +2,6 @@
 # TODO: why does systemctl restart not work?
 parent_path=$(cd `dirname $0` && pwd)
 
-pushd $parent_path
-
 git_pull () {
     git pull
 }   
@@ -15,7 +13,6 @@ install_requirements () {
 
 main () {
     git_pull
-    echo $1
     if [[ $1 -eq "install_requirements" ]]
     then
         install_requirements
@@ -26,8 +23,12 @@ main () {
     # TODO: Fix this to pick up ADC
     # TODO: Fix local logs
     export GOOGLE_APPLICATION_CREDENTIALS='/home/pi/service_account.json'
+
+    echo "Starting webcam python script."
     python3 webcam_to_pubsub.py > /home/pi/sample_startup.log 2>&1
 }
+
+pushd $parent_path
 
 main
 
